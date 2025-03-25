@@ -96,6 +96,7 @@ function newEntity() {
 function newPlayer() {
 	let p = newEntity();
 	p.move = newVector2();
+	p.isOnWinningTile = false;
 	return p;
 }
 
@@ -128,6 +129,18 @@ const MAPS = [
 		0,1,1,0,0,0,0,0,0,0,
 		0,0,0,0,0,0,0,0,0,0,
 	]),
+	Uint8Array.from([
+		0,0,0,0,0,0,0,0,0,0,
+		0,1,1,1,1,1,1,1,1,0,
+		0,1,0,0,0,0,0,0,0,0,
+		0,1,1,0,0,0,0,0,0,0,
+		0,1,1,1,1,1,1,2,0,0,
+		0,1,1,1,1,1,1,1,0,0,
+		0,1,1,1,1,1,0,0,0,0,
+		0,1,1,0,1,1,1,0,0,0,
+		0,1,1,1,1,0,1,2,0,0,
+		0,0,0,0,0,0,0,0,0,0,
+	]),
 ];
 
 const MAP_PITCH = 10;
@@ -135,6 +148,7 @@ const MAP_PITCH = 10;
 let currentMapIndex = 0;
 let player1 = newPlayer();
 let player2 = newPlayer();
+let gameWon = false;
 
 player1.pos[0] += 1;
 player1.pos[1] += 3;
@@ -172,34 +186,56 @@ function movePlayer(deltaSec, player, speed, scaleFactorX = 1, scaleFactorY = 1)
 		}
 	}
 
+	let tile = 0;
+
 	if (player.move[0] > 0) {
-		if (MAPS[currentMapIndex][Math.floor(player.pos[1]) * MAP_PITCH + Math.ceil(playerNewX)] == 0) {
+		tile = MAPS[currentMapIndex][Math.floor(player.pos[1]) * MAP_PITCH + Math.ceil(playerNewX)];
+
+		if (tile == 0) {
 			playerNewX = Math.floor(playerNewX);
 		}
 	} else if (player.move[0] < 0) {
-		if (MAPS[currentMapIndex][Math.floor(player.pos[1]) * MAP_PITCH + Math.floor(playerNewX)] == 0) {
+		tile = MAPS[currentMapIndex][Math.floor(player.pos[1]) * MAP_PITCH + Math.floor(playerNewX)];
+
+		if (tile == 0) {
 			playerNewX = Math.ceil(playerNewX);
 		}
 	}
 
 	if (player.move[1] > 0) {
-		if (MAPS[currentMapIndex][Math.ceil(playerNewY) * MAP_PITCH + Math.floor(playerNewX)] == 0) {
+		tile = MAPS[currentMapIndex][Math.ceil(playerNewY) * MAP_PITCH + Math.floor(playerNewX)];
+
+		if (tile == 0) {
 			playerNewY = Math.floor(playerNewY);
 		}
 	} else if (player.move[1] < 0) {
-		if (MAPS[currentMapIndex][Math.floor(player.pos[1]-0.25) * MAP_PITCH + Math.floor(playerNewX)] == 0) {
+		tile = MAPS[currentMapIndex][Math.floor(player.pos[1]-0.25) * MAP_PITCH + Math.floor(playerNewX)];
+
+		if (tile == 0) {
 			playerNewY = Math.ceil(playerNewY);
 		}
 	}
 
 	player.pos[0] = playerNewX;
 	player.pos[1] = playerNewY;
+	player.isOnWinningTile = MAPS[currentMapIndex][Math.round(player.pos[1] * MAP_PITCH + Math.round(player.pos[0]))] == 2;
 }
 
 /** @param {number} deltaSec  */
 function tick(deltaSec) {
 	movePlayer(deltaSec, player1, 10);
 	movePlayer(deltaSec, player2, 10, 1, -1);
+
+	if (player1.isOnWinningTile && player2.isOnWinningTile) {
+		currentMapIndex += 1;
+		gameWon = currentMapIndex >= MAPS.length;
+		currentMapIndex = Math.min(currentMapIndex, MAPS.length - 1);
+
+		player1.pos[0] = 1;
+		player1.pos[1] = 3;
+		player2.pos[0] = 1;
+		player2.pos[1] = 6;
+	}
 }
 
 function main() {
@@ -248,6 +284,11 @@ function main() {
 		const alpha = lag / TICK_RATE_SEC;
 
 		ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+		if (gameWon) {
+			ctx.strokeText("yay you won yayyyy", 0, 12, 320);
+			return;
+		}
 
 		for (let i = 0; i < MAPS[currentMapIndex].length; i++) {
 			if (MAPS[currentMapIndex][i] == 0) {
@@ -324,7 +365,7 @@ function main() {
 
 		ctx.strokeText('arrow keys: move', 0, 12, 320);
 		ctx.strokeText('get both to green', 0, 24, 320);
-		ctx.strokeText(`map: ${currentMapIndex+1}`, 0, 36, 320);
+		ctx.strokeText(`level: ${currentMapIndex+1}`, 0, 36, 320);
 
 		requestAnimationFrame(animationFrameCallback);
 	};
