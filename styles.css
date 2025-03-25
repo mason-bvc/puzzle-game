@@ -1,0 +1,12 @@
+body {
+	margin: 0;
+	background-color: rgb(0, 0, 0);
+}
+
+#the-canvas {
+	display: block;
+	margin: 0 auto;
+	height: 100vh;
+	background-color: rgb(16, 16, 16);
+	image-rendering: pixelated;
+}
